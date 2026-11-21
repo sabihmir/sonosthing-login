@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>SonosThing sign-in</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #0c0c0e; color: #f6f5f2; font: 18px/1.45 -apple-system, system-ui, sans-serif; }
+  main { max-width: 420px; padding: 24px; text-align: center; }
+  h1 { font-size: 24px; margin: 0 0 8px; }
+  p { color: #a7a6a2; margin: 0 0 12px; }
+</style>
+</head>
+<body>
+<main>
+  <h1 id="title">Connecting SonosThing…</h1>
+  <p id="text">Handing your Sonos sign-in to your Mac.</p>
+</main>
+<script>
+// Sonos sends the phone here after sign-in, with a one-time code. The Mac that started the
+// sign-in put its own address on your home network in `state`; this page only passes the code on
+// to it. Nothing is stored or sent anywhere else.
+(function () {
+  var q = new URLSearchParams(location.search), title = document.getElementById('title'), text = document.getElementById('text');
+  function fail(t, d) { title.textContent = t; text.textContent = d; }
+  if (q.get('error')) return fail('Sign-in didn’t finish', 'Sonos said: ' + q.get('error') + '. Scan the code on your Car Thing to try again.');
+  var code = q.get('code'), state = q.get('state'), back;
+  try { back = new URL(JSON.parse(atob(state.split('.')[0].replace(/-/g, '+').replace(/_/g, '/'))).r); } catch (e) {}
+  // Only ever back to a Mac on a home network, never to some other site.
+  var home = back && back.protocol === 'http:' && /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|[^.]+\.local$)/.test(back.hostname);
+  if (!code || !home) return fail('Nothing to do here', 'This page finishes a SonosThing sign-in. Start one from your Car Thing.');
+  back.searchParams.set('code', code);
+  back.searchParams.set('state', state);
+  location.replace(back.href);
+})();
+</script>
+</body>
+</html>
